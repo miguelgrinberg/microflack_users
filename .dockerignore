@@ -1,0 +1,7 @@
+.*
+venv
+tests*
+tox.ini
+__pycache__
+Dockerfile
+build.sh

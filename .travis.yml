@@ -1,0 +1,17 @@
+language: python
+env:
+  global:
+    - WHEELHOUSE=$PWD/../wheels
+matrix:
+  include:
+    - python: 3.4
+    - python: 3.5
+    - python: 3.6
+install:
+  - git clone https://github.com/miguelgrinberg/microflack_common
+  - mkdir $WHEELHOUSE
+  - pip install --upgrade pip wheel tox
+  - cd microflack_common; ./mkwheel all; cd ..
+  - pip install --find-links $WHEELHOUSE -r requirements.txt
+script:
+  - tox
