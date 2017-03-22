@@ -6,6 +6,7 @@ from flask import Flask, jsonify, request, abort, g
 from flask_httpauth import HTTPBasicAuth
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import config
@@ -19,6 +20,13 @@ app.config.from_object(getattr(config, config_name.title() + 'Config'))
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 basic_auth = HTTPBasicAuth()
+
+message_queue = 'redis://' + os.environ['REDIS'] if 'REDIS' in os.environ \
+    else None
+if message_queue:
+    socketio = SocketIO(message_queue=message_queue)
+else:
+    socketio = None
 
 
 @basic_auth.verify_password
@@ -111,6 +119,14 @@ class User(db.Model):
             user.online = False
             db.session.add(user)
         db.session.commit()
+
+
+@db.event.listens_for(User, 'after_insert')
+@db.event.listens_for(User, 'after_update')
+def after_user_update(mapper, connection, target):
+    if socketio is not None:
+        socketio.emit('updated_model', {'class': target.__class__.__name__,
+                                        'model': target.to_dict()})
 
 
 @app.before_first_request
@@ -209,6 +225,28 @@ def get_me_user():
     This endpoint requires basic auth with nickname and password.
     """
     return jsonify(g.current_user.to_dict())
+
+
+@app.route('/api/users/me', methods=['PUT'])
+@token_auth.login_required
+def set_user_online():
+    """Set the user that owns the token online."""
+    user = User.query.get(g.jwt_claims['user_id'])
+    if user is not None:
+        user.ping()
+        db.session.commit()
+    return '', 204
+
+
+@app.route('/api/users/me', methods=['DELETE'])
+@token_auth.login_required
+def set_user_offline():
+    """Set the user that owns the token offline."""
+    user = User.query.get(g.jwt_claims['user_id'])
+    if user is not None:
+        user.online = False
+        db.session.commit()
+    return '', 204
 
 
 if __name__ == '__main__':

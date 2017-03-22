@@ -9,7 +9,9 @@ import unittest
 from microflack_common.auth import generate_token
 from microflack_common.test import FlackTestCase
 
-from app import app, db, User
+import app
+app.socketio = mock.MagicMock()
+from app import app, db, User, socketio
 
 
 class UserTests(FlackTestCase):
@@ -37,6 +39,10 @@ class UserTests(FlackTestCase):
         r, s, h = self.post('/api/users', data={'nickname': 'foo',
                                                 'password': 'bar'})
         self.assertEqual(s, 201)
+        self.assertEqual(socketio.emit.call_args[0][0], 'updated_model')
+        self.assertEqual(socketio.emit.call_args[0][1]['class'], 'User')
+        self.assertEqual(socketio.emit.call_args[0][1]['model']['nickname'],
+                         'foo')
         url = h['Location']
 
         # create a duplicate user
@@ -61,6 +67,10 @@ class UserTests(FlackTestCase):
         # modify nickname
         r, s, h = self.put(url, data={'nickname': 'foo2'}, token_auth=token)
         self.assertEqual(s, 204)
+        self.assertEqual(socketio.emit.call_args[0][0], 'updated_model')
+        self.assertEqual(socketio.emit.call_args[0][1]['class'], 'User')
+        self.assertEqual(socketio.emit.call_args[0][1]['model']['nickname'],
+                         'foo2')
 
         # create second user
         r, s, h = self.post('/api/users', data={'nickname': 'bar',
@@ -155,6 +165,18 @@ class UserTests(FlackTestCase):
         self.assertEqual(len(r['users']), 2)
         self.assertEqual(r['users'][0]['nickname'], 'bar')
         self.assertEqual(r['users'][1]['nickname'], 'foo')
+
+        # set one user offline
+        r, s, h = self.delete('/api/users/me', token_auth=token)
+        self.assertEqual(s, 204)
+        user = User.query.filter_by(nickname='foo').first()
+        self.assertFalse(user.online)
+
+        # set one user online
+        r, s, h = self.put('/api/users/me', token_auth=token)
+        self.assertEqual(s, 204)
+        user = User.query.filter_by(nickname='foo').first()
+        self.assertTrue(user.online)
 
 
 if __name__ == '__main__':
