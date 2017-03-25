@@ -1,4 +1,5 @@
 alembic==0.8.10
+cachetools==2.0.0
 click==6.7
 dnspython==1.15.0
 docker==2.1.0
@@ -12,7 +13,7 @@ itsdangerous==0.24
 Jinja2==2.9.6
 Mako==1.0.6
 MarkupSafe==1.0
-MicroFlack-Common==0.1
+MicroFlack-Common==0.3
 PyJWT==1.4.2
 python-dotenv==0.6.4
 python-editor==1.0.3
