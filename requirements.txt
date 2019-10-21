@@ -18,7 +18,7 @@ MicroFlack-Common==0.3
 PyJWT==1.4.2
 python-dotenv==0.6.4
 python-editor==1.0.3
-python-engineio==1.4.0
+python-engineio==3.8.2.post1
 python-etcd==0.4.5
 python-socketio==1.7.4
 redis==2.10.5
