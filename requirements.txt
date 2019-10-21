@@ -22,7 +22,7 @@ python-engineio==1.4.0
 python-etcd==0.4.5
 python-socketio==1.7.4
 redis==2.10.5
-requests==2.13.0
+requests==2.20.0
 six==1.10.0
 SQLAlchemy==1.1.5
 urllib3==1.20
